@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APEX SIGNALS — Wett-Analyse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Bebas+Neue&family=DM+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #00ff88;
+    --blue: #00aaff;
+    --red: #ff4455;
+    --bg: #060608;
+    --bg2: #0c0c10;
+    --bg3: #111116;
+    --border: #1a1a22;
+    --text: #c8c8d8;
+    --dim: #44445a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,255,136,0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,136,0.015) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Glow top */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 400px;
+    background: radial-gradient(ellipse, rgba(0,255,136,0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap { max-width: 960px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+  /* ── HEADER ── */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 20px 0;
+    position: relative;
+    z-index: 1;
+  }
+  .header-inner {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo-diamond {
+    width: 28px; height: 28px;
+    background: var(--green);
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    animation: pulse-glow 3s ease-in-out infinite;
+  }
+  @keyframes pulse-glow {
+    0%,100% { box-shadow: 0 0 10px var(--green); opacity: 1; }
+    50% { box-shadow: 0 0 25px var(--green); opacity: 0.8; }
+  }
+  .logo-text {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px;
+    letter-spacing: 0.15em;
+    color: #fff;
+  }
+  .logo-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 0.2em;
+    margin-top: 2px;
+  }
+  .header-date {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--dim);
+    text-align: right;
+  }
+
+  /* ── API KEY SECTION ── */
+  .api-section {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px;
+    margin: 28px 0 0;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .api-section label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--dim);
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+  }
+  .api-input {
+    flex: 1;
+    min-width: 220px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 14px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    border-radius: 4px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .api-input:focus { border-color: var(--green); }
+  .api-hint {
+    font-size: 11px;
+    color: var(--dim);
+    margin-top: 8px;
+    width: 100%;
+  }
+  .api-hint a { color: var(--green); text-decoration: none; }
+
+  /* ── SCAN BUTTON ── */
+  .scan-wrap {
+    text-align: center;
+    padding: 36px 0 28px;
+  }
+  .scan-btn {
+    position: relative;
+    background: transparent;
+    border: 1px solid var(--green);
+    color: var(--green);
+    padding: 16px 52px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px;
+    letter-spacing: 0.15em;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    overflow: hidden;
+  }
+  .scan-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--green);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .scan-btn:hover::before { opacity: 0.08; }
+  .scan-btn:hover { box-shadow: 0 0 30px rgba(0,255,136,0.2); }
+  .scan-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .scan-btn span { position: relative; z-index: 1; }
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid rgba(0,255,136,0.3);
+    border-top-color: var(--green);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .log-text {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--dim);
+    margin-top: 14px;
+    letter-spacing: 0.08em;
+    min-height: 18px;
+  }
+  .error-msg {
+    color: var(--red);
+    font-size: 13px;
+    margin-top: 12px;
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  /* ── STATS BAR ── */
+  .stats-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .stat-pill {
+    border: 1px solid var(--border);
+    padding: 10px 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    border-radius: 4px;
+    min-width: 80px;
+  }
+  .stat-pill.highlight {
+    border-color: var(--green);
+    background: rgba(0,255,136,0.05);
+  }
+  .stat-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+  }
+  .stat-lbl {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--dim);
+    letter-spacing: 0.08em;
+  }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .tab {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--dim);
+    padding: 8px 16px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    letter-spacing: 0.08em;
+    border-radius: 3px;
+    transition: all 0.2s;
+  }
+  .tab:hover { border-color: #333; color: var(--text); }
+  .tab.active { border-color: var(--green); color: var(--green); background: rgba(0,255,136,0.06); }
+
+  /* ── MATCH CARDS ── */
+  .cards { display: flex; flex-direction: column; gap: 10px; }
+
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .card.signal-football { border-color: rgba(0,255,136,0.4); box-shadow: 0 0 20px rgba(0,255,136,0.08); }
+  .card.signal-icehockey { border-color: rgba(0,170,255,0.4); box-shadow: 0 0 20px rgba(0,170,255,0.08); }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    cursor: pointer;
+    gap: 16px;
+    user-select: none;
+  }
+  .card-header:hover { background: rgba(255,255,255,0.01); }
+
+  .card-meta {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 7px;
+    flex-wrap: wrap;
+  }
+  .sport-badge {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    border: 1px solid;
+    padding: 2px 8px;
+    letter-spacing: 0.06em;
+    border-radius: 2px;
+  }
+  .sport-badge.football { color: var(--green); border-color: var(--green); background: rgba(0,255,136,0.07); }
+  .sport-badge.icehockey { color: var(--blue); border-color: var(--blue); background: rgba(0,170,255,0.07); }
+  .badge-league {
+    font-size: 11px;
+    color: var(--dim);
+    font-family: 'Share Tech Mono', monospace;
+  }
+  .badge-time {
+    font-size: 11px;
+    color: var(--dim);
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  .match-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #dde;
+    letter-spacing: 0.02em;
+  }
+
+  .bet-badge {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 4px 10px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 3px;
+    letter-spacing: 0.06em;
+  }
+  .bet-badge.football { background: rgba(0,255,136,0.12); color: var(--green); }
+  .bet-badge.icehockey { background: rgba(0,170,255,0.12); color: var(--blue); }
+
+  .signal-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 32px;
+  }
+  .bar { width: 5px; border-radius: 2px; transition: background 0.3s; }
+
+  .signal-score {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    margin-left: 6px;
+  }
+  .no-signal { color: #222; font-size: 22px; font-weight: 300; }
+
+  .tg-select-label { cursor: pointer; display: inline-flex; align-items: center; gap: 0; }
+  .tg-select-label input[type=checkbox] { display: none; }
+  .tg-select-box {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    border: 1px solid #333;
+    color: #444;
+    padding: 3px 10px;
+    border-radius: 3px;
+    transition: all 0.15s;
+    letter-spacing: 0.06em;
+    user-select: none;
+  }
+  .tg-select-label:hover .tg-select-box { border-color: var(--blue); color: var(--blue); }
+  .tg-select-label input:checked + .tg-select-box {
+    border-color: var(--blue);
+    color: var(--blue);
+    background: rgba(0,170,255,0.1);
+  }
+
+  .toggle-icon { color: var(--dim); font-size: 12px; margin-left: 8px; }
+
+  /* ── EXPANDED BODY ── */
+  .card-body {
+    border-top: 1px solid var(--border);
+    padding: 16px 20px;
+    background: rgba(0,0,0,0.2);
+    display: none;
+  }
+  .card-body.open { display: block; }
+
+  .criteria-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  .criteria-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .criteria-ok { font-size: 13px; margin-top: 1px; width: 14px; flex-shrink: 0; }
+  .criteria-ok.pass { color: var(--green); }
+  .criteria-ok.fail { color: var(--red); }
+  .criteria-icon { font-size: 13px; flex-shrink: 0; }
+  .criteria-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 0.06em;
+    min-width: 110px;
+    padding-top: 1px;
+    flex-shrink: 0;
+  }
+  .criteria-text { font-size: 12px; color: #778; line-height: 1.5; }
+
+  .verdict-box {
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .verdict-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: #333;
+    padding-top: 2px;
+    flex-shrink: 0;
+  }
+  .verdict-text { font-size: 12px; color: #99a; line-height: 1.6; }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center;
+    padding: 80px 20px;
+  }
+  .empty-diamond {
+    width: 48px; height: 48px;
+    background: var(--border);
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    margin: 0 auto 20px;
+  }
+  .empty-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 0.15em;
+    color: #222;
+    margin-bottom: 10px;
+  }
+  .empty-text { color: #282830; font-size: 13px; max-width: 340px; margin: 0 auto; line-height: 1.7; }
+
+  .no-results { color: #333; text-align: center; padding: 40px; font-family: 'Share Tech Mono', monospace; font-size: 12px; }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 20px 0;
+    margin-top: 60px;
+    position: relative;
+    z-index: 1;
+  }
+  .footer-inner {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .footer-note {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: #222;
+    letter-spacing: 0.08em;
+  }
+  .update-badge {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--dim);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .live-dot {
+    width: 6px; height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: blink 2s ease-in-out infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  /* card enter animation */
+  .card { animation: fadeUp 0.3s ease both; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 600px) {
+    .api-section { flex-direction: column; align-items: flex-start; }
+    .card-header { flex-wrap: wrap; }
+    .criteria-label { min-width: 80px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div>
+      <div class="logo">
+        <div class="logo-diamond"></div>
+        <div>
+          <div class="logo-text">APEX SIGNALS</div>
+          <div class="logo-sub">SPORT BETTING INTELLIGENCE</div>
+        </div>
+      </div>
+    </div>
+    <div class="header-date" id="headerDate"></div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- API KEY -->
+  <div class="api-section">
+    <label>GROQ API KEY</label>
+    <input class="api-input" type="password" id="apiKey" placeholder="gsk_..." autocomplete="off">
+    <div class="api-hint" style="width:100%">
+      🔑 Dein Groq API Key — wird nur lokal in deinem Browser gespeichert, niemals übertragen.
+      Key holen: <a href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;width:100%;margin-top:4px;flex-wrap:wrap">
+      <label>MODELL</label>
+      <select class="api-input" id="modelSelect" style="flex:0;min-width:300px;cursor:pointer">
+        <option value="llama-3.1-8b-instant">Llama 3.1 8B Instant ⚡ (empfohlen — kein Rate Limit)</option>
+        <option value="gemma2-9b-it">Gemma 2 9B (schnell)</option>
+        <option value="llama3-70b-8192">Llama 3 70B (langsamer)</option>
+        <option value="llama-3.3-70b-versatile">Llama 3.3 70B (höchste Qualität, Rate Limit!)</option>
+      </select>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;width:100%;margin-top:8px;flex-wrap:wrap">
+      <label>TELEGRAM BOT TOKEN</label>
+      <input class="api-input" type="password" id="tgToken" placeholder="123456:ABC-DEF... (von @BotFather)" autocomplete="off" style="flex:1;min-width:220px">
+      <a href="https://t.me/botfather" target="_blank" style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--green);white-space:nowrap;text-decoration:none">🤖 Bot erstellen →</a>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;width:100%;margin-top:8px;flex-wrap:wrap">
+      <label>TELEGRAM KANAL</label>
+      <input class="api-input" type="text" id="tgChannel" placeholder="@deinkanal  oder  -100123456789" autocomplete="off" style="flex:1;min-width:220px">
+      <button onclick="testTelegram()" style="background:transparent;border:1px solid var(--dim);color:var(--dim);padding:8px 14px;font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;border-radius:3px;white-space:nowrap" onmouseover="this.style.borderColor='var(--green)';this.style.color='var(--green)'" onmouseout="this.style.borderColor='var(--dim)';this.style.color='var(--dim)'">🧪 TEST</button>
+    </div>
+
+  </div>
+
+  <!-- SCAN -->
+  <div class="scan-wrap">
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <button class="scan-btn" id="scanBtn" onclick="startAnalysis()">
+        <span>⚡</span>
+        <span>KOMMENDE SPIELE ANALYSIEREN</span>
+      </button>
+      <button class="scan-btn" id="tgBtn" onclick="manualTelegramSend()" style="border-color:var(--blue);color:var(--blue);display:none;padding:16px 28px">
+        <span>📤</span>
+        <span id="tgBtnLabel">AUSGEWÄHLTE SENDEN</span>
+      </button>
+    </div>
+    <div class="log-text" id="logText"></div>
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <!-- STATS -->
+  <div id="statsBar" class="stats-bar" style="display:none"></div>
+
+  <!-- TABS -->
+  <div id="tabsWrap" class="tabs" style="display:none"></div>
+
+  <!-- CARDS -->
+  <div class="cards" id="cards"></div>
+
+  <!-- EMPTY STATE -->
+  <div class="empty-state" id="emptyState">
+    <div class="empty-diamond"></div>
+    <div class="empty-title">BEREIT ZUR ANALYSE</div>
+    <div class="empty-text">
+      API Key eingeben und Analyse starten. Die KI scannt alle noch kommenden Spiele von heute und morgen — und filtert die besten Wett-Signale heraus.
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-note">APEX SIGNALS — Qualität vor Quantität. Nur dein Risiko, deine Entscheidung.</div>
+    <div class="update-badge" id="updateBadge" style="display:none">
+      <div class="live-dot"></div>
+      <span id="updateTime"></span>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ── STATE ──
+let allMatches = [];
+let currentFilter = 'signals';
+
+// ── INIT ──
+document.addEventListener('DOMContentLoaded', () => {
+  const stored = localStorage.getItem('apex_groq_key');
+  if (stored) document.getElementById('apiKey').value = stored;
+  const storedTgToken = localStorage.getItem('apex_tg_token');
+  if (storedTgToken) document.getElementById('tgToken').value = storedTgToken;
+  const storedTgChannel = localStorage.getItem('apex_tg_channel');
+  if (storedTgChannel) document.getElementById('tgChannel').value = storedTgChannel;
+
+
+  const now = new Date();
+  document.getElementById('headerDate').innerHTML =
+    now.toLocaleDateString('de-DE', { weekday:'long', year:'numeric', month:'long', day:'numeric' }) +
+    '<br>' + now.toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit' });
+});
+
+// ── PROMPTS ──
+const SYSTEM_PROMPT = `Du bist ein professioneller Sportwetten-Analyst. Nutze dein aktuelles Wissen über Spielpläne, Statistiken, Verletzungen und Tabellenstände.
+
+ANALYSE-KRITERIEN FUSSBALL (alle 9 prüfen):
+1. TORE GESAMT (letzte 10 Spiele): Durchschnitt > 2.5 Tore/Spiel = positiv
+2. TORE 1. HALBZEIT: Wie oft fällt in HZ1 mindestens 1 Tor? > 60% der Spiele = positiv. KRITISCH für Primärwette!
+3. FORM LETZTE 5: Aktueller Torschnitt letzte 5 Spiele > 2.5 = positiv (kein Formtief!)
+4. HEIM/AUSWÄRTS: Heimteam Heimschnitt > 2.0 Tore UND Auswärtsteam auswärts > 1.5 = positiv
+5. H2H: Direkte Duelle Torschnitt > 2.0 = positiv
+6. TABELLE: Mittelfeldteams mit gesundem Druck = positiv. NEIN bei: Abstiegskampf-Bunker, Topteam spielt B-Elf
+7. VERLETZUNGEN: Keine Toptorjäger/Stammtorhüter verletzt = positiv
+8. SPIELPHASE: Kein Finale, kein K.O., kein Titelentscheid = positiv
+9. QUOTEN-CHECK: Wenn Favorit Odds < 1.30 → Gegner parkt Bus → KEIN HZ1-Signal! Ideal: Favorit zwischen 1.40–2.20
+
+ANALYSE-KRITERIEN EISHOCKEY (alle 7 prüfen):
+1. TORE GESAMT (letzte 10): Schnitt >= 5.5 Tore/Spiel = positiv (NHL: >= 6.0, Europäische Ligen: >= 5.0)
+2. TORE PRO DRITTEL: Schnitt >= 1.8 pro Drittel = positiv
+3. FORM LETZTE 5: Torschnitt letzte 5 Spiele >= 5.0 = positiv
+4. H2H: Direkte Duelle torreich >= 5.0 Schnitt = positiv (wenige H2H-Daten → neutral werten!)
+5. TORHÜTER-FORM: Kein überdominanter Goalie mit Save% > 95% letzte 3 Spiele = positiv. Bei unbekannten Goalies → POSITIV werten!
+6. POWER PLAY: PP-Effizienz >= 16% = positiv ODER wenn beide Teams offensiv stark sind
+7. VERLETZUNGEN/PHASE: Keine kompletten Schlüsselspieler-Ausfälle, kein entscheidendes Playoff-Spiel = positiv
+
+WETTSTIL:
+- Fußball: 1. Halbzeit Over 0.5 (Primär) | Gesamt Over 1.5 (Backup wenn HZ1 kein Tor)
+- Eishockey: Over 1.5 Tore pro Drittel (Primär) | Gesamt Over 5.5 (Backup)
+
+STRENGE REGEL: signal:true NUR wenn signalStrength >= 7. Bei Fußball MUSS HZ1-Torrate positiv sein!
+EISHOCKEY WICHTIG: Eishockey ist generell torreich — bei unbekannten Statistiken eher positiv werten als negativ. 5 von 7 Kriterien erfüllt + signalStrength >= 7 → signal:true!
+
+Antworte NUR mit einem validen JSON-Array. ABSOLUT VERBOTEN: Markdown-Codeblöcke, Backticks, Erklaerungen vor oder nach dem Array. Nur das reine Array [...]:
+[{
+  "match":"Team A vs Team B",
+  "league":"Liga",
+  "sport":"football|icehockey",
+  "day":"heute|morgen",
+  "time":"HH:MM",
+  "signal":true,
+  "signalStrength":1-10,
+  "betRecommendation":"konkrete Wette z.B. HZ1 Over 0.5",
+
+  "analysis":{
+    "goals":"Torschnitt letzte 10",
+    "firstHalf":"HZ1-Torrate in % (nur Fußball)",
+    "form5":"Form letzte 5 Spiele",
+    "homeAway":"Heim/Auswärts-Statistik (nur Fußball)",
+    "h2h":"H2H-Analyse",
+    "table":"Tabellensituation",
+    "injuries":"Verletzungen/Sperren",
+    "phase":"Spielphase",
+    "odds":"Quoten-Einschätzung (nur Fußball)",
+    "goalkeeper":"Torhüter-Form (nur Eishockey)",
+    "powerplay":"Power-Play-Effizienz (nur Eishockey)"
+  },
+  "verdict":"kurzes Fazit max 2 Sätze",
+  "criteria":{
+    "goals":true,
+    "firstHalf":true,
+    "form5":true,
+    "homeAway":true,
+    "h2h":true,
+    "table":true,
+    "injuries":true,
+    "phase":true,
+    "odds":true,
+    "goalkeeper":true,
+    "powerplay":true
+  }
+}]`;
+
+
+// ── STEP 1: FETCH REAL FIXTURES FROM ESPN API (no key needed) ──
+const ESPN_SOCCER_LEAGUES = [
+  // Top-Ligen Europa
+  {id:'ger.1',           name:'Bundesliga'},
+  {id:'ger.2',           name:'2. Bundesliga'},
+  {id:'ger.3',           name:'3. Liga'},
+  {id:'eng.1',           name:'Premier League'},
+  {id:'eng.2',           name:'Championship'},
+  {id:'eng.3',           name:'League One'},
+  {id:'esp.1',           name:'La Liga'},
+  {id:'esp.2',           name:'Segunda División'},
+  {id:'ita.1',           name:'Serie A'},
+  {id:'ita.2',           name:'Serie B'},
+  {id:'fra.1',           name:'Ligue 1'},
+  {id:'fra.2',           name:'Ligue 2'},
+  {id:'ned.1',           name:'Eredivisie'},
+  {id:'ned.2',           name:'Eerste Divisie'},
+  {id:'por.1',           name:'Primeira Liga'},
+  {id:'bel.1',           name:'Belgian Pro League'},
+  {id:'sco.1',           name:'Scottish Premiership'},
+  {id:'tur.1',           name:'Süper Lig'},
+  {id:'gre.1',           name:'Super League Greece'},
+  {id:'cze.1',           name:'Czech Liga'},
+  {id:'pol.1',           name:'Ekstraklasa'},
+  {id:'rou.1',           name:'Liga 1 Romania'},
+  {id:'den.1',           name:'Superliga Denmark'},
+  {id:'swe.1',           name:'Allsvenskan'},
+  {id:'nor.1',           name:'Eliteserien'},
+  {id:'srb.1',           name:'SuperLiga Serbia'},
+  {id:'ukr.1',           name:'Premier League Ukraine'},
+  {id:'cro.1',           name:'HNL Croatia'},
+  {id:'aut.1',           name:'Österr. Bundesliga'},
+  {id:'sui.1',           name:'Swiss Super League'},
+  {id:'hun.1',           name:'OTP Bank Liga'},
+  {id:'svk.1',           name:'Fortuna Liga Slovakia'},
+  {id:'bul.1',           name:'First League Bulgaria'},
+  // UEFA Wettbewerbe
+  {id:'uefa.champions',  name:'Champions League'},
+  {id:'uefa.europa',     name:'Europa League'},
+  {id:'uefa.europa.conf',name:'Conference League'},
+  {id:'uefa.nations',    name:'Nations League'},
+  // Amerika
+  {id:'usa.1',           name:'MLS'},
+  {id:'usa.open',        name:'US Open Cup'},
+  {id:'mex.1',           name:'Liga MX'},
+  {id:'bra.1',           name:'Brasileirão'},
+  {id:'arg.1',           name:'Liga Profesional Argentina'},
+  {id:'col.1',           name:'Liga Colombiana'},
+  {id:'chi.1',           name:'Primera División Chile'},
+  // Asien / Rest
+  {id:'jpn.1',           name:'J-League'},
+  {id:'aus.1',           name:'A-League'},
+  {id:'rus.1',           name:'Russian Premier League'},
+];
+
+const ESPN_HOCKEY_LEAGUES = [
+  {id:'nhl',             name:'NHL'},
+  {id:'ahl',             name:'AHL'},
+];
+
+// European hockey via separate API endpoint pattern
+const EUROPEAN_HOCKEY_LEAGUES = [
+  {id:'del',             name:'DEL'},         // Deutschland
+  {id:'ice.hockey',      name:'ICE Hockey'},  // Österreich/EBEL
+  {id:'nl',              name:'NL'},           // Schweiz
+  {id:'shl',             name:'SHL'},          // Schweden
+  {id:'liiga',           name:'Liiga'},        // Finnland
+  {id:'khl',             name:'KHL'},          // Russland
+  {id:'extraliga',       name:'Extraliga'},    // Tschechien
+  {id:'tipsport',        name:'Tipsport Liga'},// Slowakei
+];
+
+async function fetchESPN(sport, leagueId, dateStr) {
+  // dateStr: YYYYMMDD
+  const url = `https://site.api.espn.com/apis/site/v2/sports/${sport}/${leagueId}/scoreboard?dates=${dateStr}&limit=50`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.events || []).map(ev => {
+      const comp = ev.competitions?.[0];
+      const home = comp?.competitors?.find(c => c.homeAway === 'home')?.team?.displayName || '';
+      const away = comp?.competitors?.find(c => c.homeAway === 'away')?.team?.displayName || '';
+      const date = new Date(ev.date || '');
+      const timeUTC = isNaN(date) ? '?' : `${String(date.getUTCHours()).padStart(2,'0')}:${String(date.getUTCMinutes()).padStart(2,'0')}`;
+      const state   = comp?.status?.type?.state || 'pre'; // pre / in / post
+      return { _home: home, _away: away, _timeUTC: timeUTC, _date: date, _state: state };
+    });
+  } catch { return []; }
+}
+
+// Fetch European hockey from ESPN hockey endpoint variants
+async function fetchESPNHockeyEU(leagueId, leagueName, dateStr) {
+  // Try different ESPN endpoint patterns for European hockey
+  const urls = [
+    `https://site.api.espn.com/apis/site/v2/sports/hockey/${leagueId}/scoreboard?dates=${dateStr}&limit=50`,
+    `https://site.api.espn.com/apis/site/v2/sports/hockey/world.hockey.${leagueId}/scoreboard?dates=${dateStr}&limit=50`,
+  ];
+  for (const url of urls) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const data = await res.json();
+      const events = data.events || [];
+      if (!events.length) continue;
+      return events.map(ev => {
+        const comp = ev.competitions?.[0];
+        const home = comp?.competitors?.find(c => c.homeAway === 'home')?.team?.displayName || '';
+        const away = comp?.competitors?.find(c => c.homeAway === 'away')?.team?.displayName || '';
+        const date = new Date(ev.date || '');
+        const timeUTC = isNaN(date) ? '?' : `${String(date.getUTCHours()).padStart(2,'0')}:${String(date.getUTCMinutes()).padStart(2,'0')}`;
+        const state = comp?.status?.type?.state || 'pre';
+        return { _home: home, _away: away, _timeUTC: timeUTC, _date: date, _state: state, _sport:'icehockey', _league: leagueName };
+      });
+    } catch { continue; }
+  }
+  return [];
+}
+
+async function fetchAllFixtures(dateISO) {
+  const dateStr = dateISO.replace(/-/g, '');
+
+  const soccerPromises = ESPN_SOCCER_LEAGUES.map(l =>
+    fetchESPN('soccer', l.id, dateStr).then(evs =>
+      evs.map(e => ({...e, _sport:'football', _league: l.name}))
+    )
+  );
+  const hockeyNAPromises = ESPN_HOCKEY_LEAGUES.map(l =>
+    fetchESPN('hockey', l.id, dateStr).then(evs =>
+      evs.map(e => ({...e, _sport:'icehockey', _league: l.name}))
+    )
+  );
+  const hockeyEUPromises = EUROPEAN_HOCKEY_LEAGUES.map(l =>
+    fetchESPNHockeyEU(l.id, l.name, dateStr)
+  );
+
+  const results = await Promise.all([...soccerPromises, ...hockeyNAPromises, ...hockeyEUPromises]);
+  return results.flat();
+}
+
+// ── TELEGRAM ──
+function escapeHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function formatSignalForTelegram(m) {
+  const sport = m.sport === 'football' ? '⚽ FUSSBALL' : '🏒 EISHOCKEY';
+  const day = m.day === 'morgen' ? '🟡 MORGEN' : '🟢 HEUTE';
+  const stars = '🔥'.repeat(Math.max(1, Math.round((m.signalStrength - 6) * 2)));
+  const bars = '█'.repeat(m.signalStrength || 0) + '░'.repeat(10 - (m.signalStrength || 0));
+  const ana = m.analysis || {};
+
+  const footballRows = [
+    ['⚽ Tore Ø', ana.goals],
+    ['1️⃣ HZ1-Rate', ana.firstHalf],
+    ['📈 Form ×5', ana.form5],
+    ['🏠 Heim/Ausw.', ana.homeAway],
+    ['🔄 H2H', ana.h2h],
+    ['📊 Tabelle', ana.table],
+    ['🏥 Verletzt', ana.injuries],
+    ['💰 Quoten', ana.odds],
+  ];
+  const hockeyRows = [
+    ['🏒 Tore Ø', ana.goals],
+    ['📐 /Drittel', ana.firstHalf],
+    ['📈 Form ×5', ana.form5],
+    ['🔄 H2H', ana.h2h],
+    ['🥅 Torhüter', ana.goalkeeper],
+    ['⚡ Power Play', ana.powerplay],
+    ['🏥 Verletzt', ana.injuries],
+  ];
+
+  const rows = (m.sport === 'football' ? footballRows : hockeyRows)
+    .filter(([_, v]) => v)
+    .map(([label, val]) => `  ${escapeHtml(label)}: ${escapeHtml(val)}`)
+    .join('\n');
+
+  return `🎯 <b>APEX SIGNAL</b> ${stars}
+${sport} · ${day} · ${escapeHtml(m.league)}
+⏰ ${escapeHtml(m.time)} UTC
+
+<b>${escapeHtml(m.match)}</b>
+
+💡 <b>Wette: ${escapeHtml(m.betRecommendation)}</b>
+📊 Signal-Stärke: ${bars} ${m.signalStrength}/10
+
+<b>Analyse:</b>
+${rows}
+
+📝 <i>${escapeHtml(m.verdict)}</i>
+
+━━━━━━━━━━━━━━
+<i>Apex Signals — nur zur Information. Kein Aufruf zum Wetten.</i>`;
+}
+
+// ── TELEGRAM FETCH — tries direct + multiple CORS proxies ──
+async function tgFetch(url, body) {
+  const proxies = [
+    u => u,  // direct (works when hosted online)
+    u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+    u => `https://api.allorigins.win/post?url=${encodeURIComponent(u)}`,
+    u => `https://proxy.cors.sh/${u}`,
+  ];
+  for (const proxy of proxies) {
+    try {
+      const r = await fetch(proxy(url), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body
+      });
+      if (r.ok || r.status === 400 || r.status === 401 || r.status === 403) return r;
+    } catch(e) { continue; }
+  }
+  throw new Error('Alle Verbindungsversuche fehlgeschlagen. Bitte Datei online hosten (netlify.com/drop).');
+}
+
+async function testTelegram() {
+  const token = document.getElementById('tgToken').value.trim();
+  const channel = document.getElementById('tgChannel').value.trim();
+
+  if (!token) { showError('❌ Bitte zuerst Bot-Token eingeben!'); return; }
+  if (!channel) { showError('❌ Bitte zuerst Kanal-ID eingeben!'); return; }
+
+  clearError();
+  log('🧪 Sende Test-Nachricht...');
+
+  try {
+    const tgUrl = `https://api.telegram.org/bot${token}/sendMessage`;
+    const body = JSON.stringify({
+      chat_id: channel,
+      text: '✅ <b>APEX SIGNALS</b> — Verbindung erfolgreich!',
+      parse_mode: 'HTML'
+    });
+    const res = await tgFetch(tgUrl, body);
+    const data = await res.json();
+    console.log('Telegram test response:', data);
+
+    if (data.ok) {
+      log('✅ Test erfolgreich! Nachricht in Telegram erhalten?');
+      clearError();
+    } else {
+      log('');
+      const desc = data.description || '';
+      if (data.error_code === 401) showError('❌ Fehler 401: Bot-Token ungültig! Nochmal von @BotFather kopieren.');
+      else if (data.error_code === 403) showError('❌ Fehler 403: Bot ist KEIN Admin im Kanal! Bot als Admin hinzufügen.');
+      else if (data.error_code === 400 && desc.includes('chat not found')) showError('❌ Fehler 400: Kanal nicht gefunden! ID mit - am Anfang? z.B. -1001234567890');
+      else if (data.error_code === 400) showError(`❌ Fehler 400: ${desc}`);
+      else showError(`❌ Telegram Fehler ${data.error_code}: ${desc}`);
+    }
+  } catch(e) {
+    log('');
+    showError('❌ Netzwerkfehler: ' + e.message);
+  }
+}
+
+async function sendToTelegram(signals) {
+  const token = document.getElementById('tgToken').value.trim();
+  const channel = document.getElementById('tgChannel').value.trim();
+  if (!token || !channel) return;
+  if (!signals.length) return;
+
+  log(`📤 Sende ${signals.length} Signal(e) an Telegram...`);
+  let sent = 0, failed = 0;
+
+  for (const m of signals) {
+    const text = formatSignalForTelegram(m);
+    try {
+      const tgUrl = `https://api.telegram.org/bot${token}/sendMessage`;
+      const body = JSON.stringify({ chat_id: channel, text, parse_mode: 'HTML', disable_web_page_preview: true });
+      const res = await tgFetch(tgUrl, body);
+      const data = await res.json();
+      if (data.ok) {
+        sent++;
+      } else {
+        console.warn('Telegram error:', data);
+        failed++;
+        const desc = data.description || 'Unbekannter Fehler';
+        if (data.error_code === 401) showError('❌ Telegram: Ungültiger Bot-Token — nochmal prüfen!');
+        else if (data.error_code === 403) showError('❌ Telegram: Bot ist kein Admin im Kanal!');
+        else if (data.error_code === 400 && desc.includes('chat not found')) showError('❌ Telegram: Kanal nicht gefunden — ID prüfen! (mit - am Anfang?)');
+        else showError(`❌ Telegram Fehler ${data.error_code}: ${desc}`);
+        break; // stop on first error
+      }
+    } catch(e) { failed++; console.error('Telegram fetch error:', e); }
+    await new Promise(r => setTimeout(r, 500)); // avoid flood
+  }
+
+  if (sent > 0) log(`✅ ${sent} Signal(e) an Telegram gesendet!`);
+}
+
+// ── MAIN ANALYSIS ──
+async function startAnalysis() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if (!apiKey) { showError('Bitte zuerst deinen Groq API Key eingeben!'); return; }
+
+  localStorage.setItem('apex_groq_key', apiKey);
+  const tgTokenVal = document.getElementById('tgToken').value.trim();
+  const tgChannelVal = document.getElementById('tgChannel').value.trim();
+  if (tgTokenVal) localStorage.setItem('apex_tg_token', tgTokenVal);
+  if (tgChannelVal) localStorage.setItem('apex_tg_channel', tgChannelVal);
+
+  setLoading(true);
+  clearError();
+  allMatches = [];
+  renderAll([]);
+
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const todayISO    = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  const tom         = new Date(now); tom.setDate(tom.getDate()+1);
+  const tomorrowISO = `${tom.getFullYear()}-${pad(tom.getMonth()+1)}-${pad(tom.getDate())}`;
+  const timeStr     = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const todayDE     = now.toLocaleDateString('de-DE');
+  const tomorrowDE  = tom.toLocaleDateString('de-DE');
+
+  try {
+    // ── STEP 1: Real fixture data via ESPN ──
+    log('📅 Lade Spielpläne (ESPN API) ...');
+    const [todayFixtures, tomorrowFixtures] = await Promise.all([
+      fetchAllFixtures(todayISO),
+      fetchAllFixtures(tomorrowISO)
+    ]);
+
+    // Filter today: exclude finished games, keep live + upcoming
+    const upcomingToday = todayFixtures.filter(e => {
+      if (e._state === 'post') return false; // finished — skip
+      // Keep live, pre, and unknown state
+      return true;
+    });
+
+    const allEvents = [
+      ...upcomingToday.map(e => ({...e, _day:'heute'})),
+      ...tomorrowFixtures.filter(e => e._state !== 'post').map(e => ({...e, _day:'morgen'}))
+    ];
+
+    if (!allEvents.length) {
+      setLoading(false); log('');
+      showError('⚠️ Keine kommenden Spiele gefunden. Möglicherweise ist heute spielfrei in den großen Ligen.');
+      return;
+    }
+
+    // Build fixture list for Groq (max 25 to stay within token limits)
+    const MAX = 50;
+    const fixtureList = allEvents.slice(0, MAX).map(e =>
+      `[${e._day.toUpperCase()}] ${e._timeUTC} UTC | ${e._sport} | ${e._league} | ${e._home} vs ${e._away}`
+    ).join('\n');
+
+    const total = allEvents.length;
+    const model = document.getElementById('modelSelect').value;
+
+    // ── STEP 2: Batch analysis — 5 games per call ──
+    const BATCH = 5;
+    const batches = [];
+    for (let i = 0; i < Math.min(allEvents.length, MAX); i += BATCH) {
+      batches.push(allEvents.slice(i, i + BATCH));
+    }
+
+    async function callGroqBatch(events, batchIdx, retryCount = 0) {
+      const lines = events.map(e =>
+        `[${e._day.toUpperCase()}] ${e._timeUTC} UTC | ${e._sport} | ${e._league} | ${e._home} vs ${e._away}`
+      ).join('\n');
+
+      const userPrompt = `Uhrzeit jetzt: ${timeStr} Uhr CET (${todayDE}). Morgen: ${tomorrowDE}.
+
+SPIELE (NUR diese analysieren):
+${lines}
+
+Analysiere alle obigen Spiele. "day"="heute"/"morgen", "time"=UTC, "sport"="football"/"icehockey". signal:true NUR bei signalStrength>=7.`;
+
+      const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'user', content: userPrompt }
+          ],
+          temperature: 0.2,
+          max_tokens: 4000
+        })
+      });
+
+      if (resp.status === 429 && retryCount < 3) {
+        const waitSec = (retryCount + 1) * 20;
+        for (let i = waitSec; i > 0; i--) {
+          log(`⏳ Rate Limit — Retry in ${i}s...`);
+          await new Promise(r => setTimeout(r, 1000));
+        }
+        return callGroqBatch(events, batchIdx, retryCount + 1);
+      }
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        const msg = err.error?.message || `HTTP ${resp.status}`;
+        if (resp.status === 401) throw new Error('🔑 Ungültiger API Key. Prüfe deinen Key auf console.groq.com/keys');
+        if (resp.status === 403) throw new Error('💳 Zugriff verweigert — prüfe deinen Key auf console.groq.com');
+        if (resp.status === 404 || resp.status === 410) throw new Error('⚠️ Modell nicht verfügbar. Bitte ein anderes Modell wählen.');
+        if (resp.status === 429) throw new Error('⏳ Rate Limit auch nach 3 Versuchen. Bitte Modell wechseln.');
+        throw new Error(msg);
+      }
+
+      const data = await resp.json();
+      let text = data.choices?.[0]?.message?.content || '';
+      text = text.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim();
+
+      const jsonMatch = text.match(/\[[\s\S]*/);
+      if (!jsonMatch) return [];
+
+      let raw = jsonMatch[0];
+      try { return JSON.parse(raw); } catch (_) {}
+
+      // Repair truncated JSON
+      const lastBrace = raw.lastIndexOf('}');
+      if (lastBrace === -1) return [];
+      try {
+        const repaired = raw.slice(0, lastBrace + 1).replace(/,\s*$/, '') + ']';
+        return JSON.parse(repaired);
+      } catch (_) { return []; }
+    }
+
+    // Run batches sequentially to avoid rate limits
+    allMatches = [];
+    for (let b = 0; b < batches.length; b++) {
+      log(`📊 Analysiere Spiele ${b * BATCH + 1}–${Math.min((b + 1) * BATCH, total)} von ${Math.min(total, MAX)}...`);
+      const results = await callGroqBatch(batches[b], b);
+      allMatches = allMatches.concat(results);
+      renderAll(allMatches);
+      document.getElementById('emptyState').style.display = 'none';
+      if (b < batches.length - 1) {
+        // Small delay between batches to respect rate limits
+        await new Promise(r => setTimeout(r, 1500));
+      }
+    }
+
+    if (!allMatches.length) throw new Error('Keine Spiele analysiert. Bitte erneut versuchen.');
+
+    log('');
+    setLoading(false);
+    renderAll(allMatches);
+
+    document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('updateBadge').style.display = 'flex';
+    document.getElementById('updateTime').textContent =
+      'Aktualisiert ' + new Date().toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit' });
+
+    // Show manual Telegram button if credentials exist
+    const hasTg = document.getElementById('tgToken').value.trim() && document.getElementById('tgChannel').value.trim();
+    if (hasTg) document.getElementById('tgBtn').style.display = 'inline-flex';
+
+  } catch (e) {
+    setLoading(false);
+    log('');
+    showError('❌ ' + e.message);
+  }
+}
+
+// ── RENDER ──
+function renderAll(matches) {
+  renderStats(matches);
+  renderTabs(matches);
+  renderCards(matches, currentFilter);
+}
+
+function renderStats(matches) {
+  const bar = document.getElementById('statsBar');
+  if (!matches.length) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+
+  const signals = matches.filter(m => m.signal).length;
+  const fb = matches.filter(m => m.sport === 'football').length;
+  const ih = matches.filter(m => m.sport === 'icehockey').length;
+
+  bar.innerHTML = `
+    ${pill(matches.length, 'ANALYSIERT', '#888')}
+    ${pill(signals, 'SIGNALE', 'var(--green)', true)}
+    ${pill(fb, '⚽ FUSSBALL', 'var(--green)')}
+    ${pill(ih, '🏒 EISHOCKEY', 'var(--blue)')}
+  `;
+}
+
+function pill(val, lbl, color, highlight) {
+  return `<div class="stat-pill ${highlight?'highlight':''}" style="color:${color}">
+    <div class="stat-val" style="color:${color}">${val}</div>
+    <div class="stat-lbl">${lbl}</div>
+  </div>`;
+}
+
+function renderTabs(matches) {
+  const wrap = document.getElementById('tabsWrap');
+  if (!matches.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'flex';
+
+  const signals = matches.filter(m => m.signal).length;
+  const heute = matches.filter(m => m.day !== 'morgen').length;
+  const morgen = matches.filter(m => m.day === 'morgen').length;
+  const tabs = [
+    { id: 'signals',   label: `🎯 Signale (${signals})` },
+    { id: 'all',       label: `Alle (${matches.length})` },
+    { id: 'heute',     label: `Heute (${heute})` },
+    { id: 'morgen',    label: `Morgen (${morgen})` },
+    { id: 'football',  label: '⚽ Fußball' },
+    { id: 'icehockey', label: '🏒 Eishockey' },
+  ];
+
+  wrap.innerHTML = tabs.map(t =>
+    `<button class="tab ${currentFilter===t.id?'active':''}" onclick="setFilter('${t.id}')">${t.label}</button>`
+  ).join('');
+}
+
+function setFilter(f) {
+  currentFilter = f;
+  renderTabs(allMatches);
+  renderCards(allMatches, f);
+}
+
+function renderCards(matches, filter) {
+  const container = document.getElementById('cards');
+
+  let filtered = matches;
+  if (filter === 'signals')   filtered = matches.filter(m => m.signal);
+  else if (filter === 'heute')     filtered = matches.filter(m => m.day !== 'morgen');
+  else if (filter === 'morgen')    filtered = matches.filter(m => m.day === 'morgen');
+  else if (filter === 'football')  filtered = matches.filter(m => m.sport === 'football');
+  else if (filter === 'icehockey') filtered = matches.filter(m => m.sport === 'icehockey');
+
+  if (!filtered.length) {
+    container.innerHTML = `<div class="no-results">— KEINE SPIELE IN DIESER KATEGORIE —</div>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map((m, i) => cardHTML(m, i)).join('');
+}
+
+
+function cardHTML(m, i) {
+  const isFootball = m.sport === 'football';
+  const color = isFootball ? 'var(--green)' : 'var(--blue)';
+  const signalClass = m.signal ? `signal-${m.sport}` : '';
+  const strength = m.signalStrength || 0;
+  const bars = Math.round((strength / 10) * 8);
+
+  const barsHTML = m.signal ? `
+    <div class="signal-bars">
+      ${Array.from({length:8},(_,j) => `
+        <div class="bar" style="height:${6+j*3}px;background:${j<bars?color:'#1a1a22'}"></div>
+      `).join('')}
+      <div class="signal-score" style="color:${color}">${strength}/10</div>
+    </div>
+  ` : `<div class="no-signal">—</div>`;
+
+  const crit = m.criteria || {};
+  const ana = m.analysis || {};
+
+  const footballRows = [
+    { icon:'⚽', label:'TORE Ø LTZ.10', ok: crit.goals,    text: ana.goals },
+    { icon:'1️⃣',  label:'HZ1-TORRATE',  ok: crit.firstHalf, text: ana.firstHalf },
+    { icon:'📈', label:'FORM LTZ.5',    ok: crit.form5,    text: ana.form5 },
+    { icon:'🏠', label:'HEIM/AUSWÄRTS', ok: crit.homeAway, text: ana.homeAway },
+    { icon:'🔄', label:'H2H',           ok: crit.h2h,      text: ana.h2h },
+    { icon:'📊', label:'TABELLE',       ok: crit.table,    text: ana.table },
+    { icon:'🏥', label:'VERLETZUNGEN',  ok: crit.injuries, text: ana.injuries },
+    { icon:'🚨', label:'SPIELPHASE',    ok: crit.phase,    text: ana.phase },
+    { icon:'💰', label:'QUOTEN-CHECK',  ok: crit.odds,     text: ana.odds },
+  ];
+
+  const icehockeyRows = [
+    { icon:'🏒', label:'TORE Ø LTZ.10',  ok: crit.goals,      text: ana.goals },
+    { icon:'📐', label:'TORE/DRITTEL',   ok: crit.firstHalf,  text: ana.firstHalf },
+    { icon:'📈', label:'FORM LTZ.5',     ok: crit.form5,      text: ana.form5 },
+    { icon:'🔄', label:'H2H',            ok: crit.h2h,        text: ana.h2h },
+    { icon:'🥅', label:'TORHÜTER-FORM',  ok: crit.goalkeeper, text: ana.goalkeeper },
+    { icon:'⚡', label:'POWER PLAY',     ok: crit.powerplay,  text: ana.powerplay },
+    { icon:'🏥', label:'VERLETZUNGEN',   ok: crit.injuries,   text: ana.injuries },
+    { icon:'🚨', label:'SPIELPHASE',     ok: crit.phase,      text: ana.phase },
+  ];
+
+  const rows = isFootball ? footballRows : icehockeyRows;
+
+  const criteriaRows = rows.map(r => `
+    <div class="criteria-row">
+      <span class="criteria-ok ${r.ok?'pass':'fail'}">${r.ok?'✓':'✗'}</span>
+      <span class="criteria-icon">${r.icon}</span>
+      <span class="criteria-label">${r.label}</span>
+      <span class="criteria-text">${r.text || '—'}</span>
+    </div>
+  `).join('');
+
+  return `
+  <div class="card ${signalClass}" style="animation-delay:${i*0.04}s">
+    <div class="card-header" onclick="toggleCard(this)">
+      <div style="flex:1">
+        <div class="card-meta">
+          <span class="sport-badge ${m.sport}">${isFootball ? '⚽ FUSSBALL' : '🏒 EISHOCKEY'}</span>
+          ${m.day === 'morgen' ? `<span style="font-family:'Share Tech Mono',monospace;font-size:10px;border:1px solid #ff9900;color:#ff9900;padding:2px 8px;border-radius:2px;background:rgba(255,153,0,0.07)">MORGEN</span>` : `<span style="font-family:'Share Tech Mono',monospace;font-size:10px;border:1px solid #555;color:#555;padding:2px 8px;border-radius:2px;">HEUTE</span>`}
+          <span class="badge-league">${m.league || ''}</span>
+          <span class="badge-time">🕐 ${m.time || '—'}</span>
+        </div>
+        <div class="match-name">${m.match}</div>
+        ${m.signal ? `
+          <div style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap">
+            <div class="bet-badge ${m.sport}">🎯 ${m.betRecommendation}</div>
+            <label class="tg-select-label" onclick="event.stopPropagation()">
+              <input type="checkbox" class="tg-checkbox" data-match="${m.match.replace(/"/g,'')}" onchange="updateTgCount()" onclick="event.stopPropagation()">
+              <span class="tg-select-box">📤 Senden</span>
+            </label>
+          </div>` : ''}
+
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+        ${barsHTML}
+        <span class="toggle-icon">▼</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="criteria-list">${criteriaRows}</div>
+      <div class="verdict-box">
+        <span class="verdict-label">FAZIT</span>
+        <span class="verdict-text">${m.verdict || '—'}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleCard(header) {
+  const body = header.nextElementSibling;
+  const icon = header.querySelector('.toggle-icon');
+  const isOpen = body.classList.toggle('open');
+  icon.textContent = isOpen ? '▲' : '▼';
+}
+
+// ── HELPERS ──
+function updateTgCount() {
+  const checked = document.querySelectorAll('.tg-checkbox:checked').length;
+  const btn = document.getElementById('tgBtn');
+  const label = document.getElementById('tgBtnLabel');
+  if (checked > 0) {
+    label.textContent = `${checked} SIGNAL${checked > 1 ? 'E' : ''} SENDEN`;
+    btn.style.borderColor = 'var(--green)';
+    btn.style.color = 'var(--green)';
+  } else {
+    label.textContent = 'AUSGEWÄHLTE SENDEN';
+    btn.style.borderColor = 'var(--blue)';
+    btn.style.color = 'var(--blue)';
+  }
+}
+
+async function manualTelegramSend() {
+  const checked = [...document.querySelectorAll('.tg-checkbox:checked')];
+  if (!checked.length) { showError('❌ Bitte mindestens ein Signal auswählen (📤 Senden Checkbox).'); return; }
+  const token = document.getElementById('tgToken').value.trim();
+  const channel = document.getElementById('tgChannel').value.trim();
+  if (!token || !channel) { showError('❌ Bitte Bot-Token und Kanal eingeben!'); return; }
+  clearError();
+  const selectedSignals = checked.map(cb => {
+    const matchName = cb.dataset.match;
+    return allMatches.find(m => m.signal && m.match.replace(/"/g,'') === matchName) || null;
+  }).filter(Boolean);
+  document.getElementById('tgBtn').disabled = true;
+  await sendToTelegram(selectedSignals);
+  document.getElementById('tgBtn').disabled = false;
+  // Uncheck all after sending
+  document.querySelectorAll('.tg-checkbox').forEach(c => c.checked = false);
+  updateTgCount();
+}
+
+function setLoading(on) {
+  const btn = document.getElementById('scanBtn');
+  btn.disabled = on;
+  btn.innerHTML = on
+    ? `<span class="spinner"></span><span>ANALYSIERE...</span>`
+    : `<span>⚡</span><span>TAGES-ANALYSE STARTEN</span>`;
+}
+
+function log(msg) { document.getElementById('logText').textContent = msg; }
+function showError(msg) { document.getElementById('errorMsg').textContent = msg; }
+function clearError() { document.getElementById('errorMsg').textContent = ''; }
+</script>
+</body>
+</html>
